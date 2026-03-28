@@ -4,43 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Value Calculator</title>
-    <!-- Schrift: gut lesbar, eine Datei von Google (kein Build nötig) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Kopfzeile: Titel + später Admin -->
     <header class="site-header">
         <div class="site-header__brand">
             <span class="site-header__logo" aria-hidden="true"></span>
             <div>
                 <h1 class="site-header__title">Trading Value Calculator</h1>
-                <p class="site-header__tagline">Dashboard · Platzhalter-UI</p>
+                <p class="site-header__tagline">Live · Trade-Vergleich</p>
             </div>
         </div>
-        <nav class="site-header__nav" aria-label="Hauptnavigation">
-            <!-- Später: echter Admin-Bereich -->
-            <a class="btn btn--ghost" href="#admin" id="adminLink">Admin</a>
-        </nav>
     </header>
 
     <main class="main">
-        <!-- Drei Spalten: Angebot | Ergebnis | Gegenangebot -->
         <div class="dashboard">
             <section class="panel panel--offer" aria-labelledby="your-offer-heading">
                 <div class="panel__head">
                     <h2 id="your-offer-heading" class="panel__title">Your Offer</h2>
                     <span class="panel__badge">Du</span>
                 </div>
-                <p class="panel__hint">Platzhalter – hier kommen später deine Items rein.</p>
-                <ul class="item-list" id="yourOfferList">
-                    <!-- Platzhalter-Einträge -->
-                </ul>
+                <p class="panel__hint">Item wählen, Menge eingeben, auf „Hinzufügen“ klicken.</p>
+                <div class="offer-form">
+                    <label class="sr-only" for="yourItemSelect">Item</label>
+                    <select id="yourItemSelect" class="offer-form__select"></select>
+                    <label class="sr-only" for="yourQtyInput">Menge</label>
+                    <input type="number" id="yourQtyInput" class="offer-form__qty" min="1" step="1" inputmode="numeric" placeholder="Menge">
+                    <button type="button" id="btnAddYour" class="btn btn--primary">Hinzufügen</button>
+                </div>
+                <p id="yourFormError" class="form-error" aria-live="polite"></p>
+                <ul class="item-list" id="yourOfferList"></ul>
                 <div class="panel__footer">
-                    <span class="label-muted">Zwischensumme (Demo)</span>
-                    <span class="value-pill" id="yourOfferTotal">—</span>
+                    <span class="label-muted">Gesamtwert (links)</span>
+                    <span class="value-pill" id="yourOfferTotal">0</span>
                 </div>
             </section>
 
@@ -48,19 +47,25 @@
                 <div class="panel__head panel__head--center">
                     <h2 id="result-heading" class="panel__title">Ergebnis</h2>
                 </div>
-                <div class="result-block">
-                    <p class="result-block__label">Differenz (Demo)</p>
-                    <p class="result-block__value" id="resultDiff">+0 %</p>
-                    <p class="result-block__sub" id="resultHint">Noch keine Berechnung aktiv.</p>
+                <div class="result-block" id="resultBlock">
+                    <p class="result-block__label">Bewertung</p>
+                    <p class="result-block__outcome" id="resultOutcome">Fair</p>
+                    <p class="result-block__label result-block__label--tiny">Prozent (Basis: Dein Wert)</p>
+                    <p class="result-block__value" id="resultPercent">0 %</p>
+                    <p class="result-block__sub" id="resultHint">Füge Items auf beiden Seiten ein.</p>
                 </div>
                 <div class="result-stats">
                     <div class="result-stats__row">
-                        <span>Dein Wert</span>
+                        <span>Gesamtwert links (Du)</span>
                         <span id="statYour">0</span>
                     </div>
                     <div class="result-stats__row">
-                        <span>Ihr Wert</span>
+                        <span>Gesamtwert rechts (Ihr)</span>
                         <span id="statTheir">0</span>
+                    </div>
+                    <div class="result-stats__row">
+                        <span>Differenz (Ihr − Du)</span>
+                        <span id="statDiff">0</span>
                     </div>
                 </div>
             </section>
@@ -70,22 +75,27 @@
                     <h2 id="their-offer-heading" class="panel__title">Their Offer</h2>
                     <span class="panel__badge panel__badge--alt">Gegner</span>
                 </div>
-                <p class="panel__hint">Platzhalter – später der Trade vom anderen Spieler.</p>
-                <ul class="item-list" id="theirOfferList">
-                    <!-- Platzhalter-Einträge -->
-                </ul>
+                <p class="panel__hint">Gleiches für das Angebot der anderen Seite.</p>
+                <div class="offer-form">
+                    <label class="sr-only" for="theirItemSelect">Item</label>
+                    <select id="theirItemSelect" class="offer-form__select"></select>
+                    <label class="sr-only" for="theirQtyInput">Menge</label>
+                    <input type="number" id="theirQtyInput" class="offer-form__qty" min="1" step="1" inputmode="numeric" placeholder="Menge">
+                    <button type="button" id="btnAddTheir" class="btn btn--primary">Hinzufügen</button>
+                </div>
+                <p id="theirFormError" class="form-error" aria-live="polite"></p>
+                <ul class="item-list" id="theirOfferList"></ul>
                 <div class="panel__footer">
-                    <span class="label-muted">Zwischensumme (Demo)</span>
-                    <span class="value-pill value-pill--alt" id="theirOfferTotal">—</span>
+                    <span class="label-muted">Gesamtwert (rechts)</span>
+                    <span class="value-pill value-pill--alt" id="theirOfferTotal">0</span>
                 </div>
             </section>
         </div>
 
-        <!-- Unten: Itemliste / spätere Value-Tabelle -->
         <section class="panel panel--wide" aria-labelledby="table-heading">
             <div class="panel__head">
                 <h2 id="table-heading" class="panel__title">Item-Werte (Referenz)</h2>
-                <span class="panel__badge panel__badge--table">Demo-Daten</span>
+                <span class="panel__badge panel__badge--table">Zentrale Liste</span>
             </div>
             <div class="table-wrap">
                 <table class="value-table">
@@ -93,12 +103,10 @@
                         <tr>
                             <th scope="col">Item</th>
                             <th scope="col">Wert</th>
-                            <th scope="col">Notiz</th>
+                            <th scope="col">Hinweis</th>
                         </tr>
                     </thead>
-                    <tbody id="valueTableBody">
-                        <!-- Zeilen kommen aus script.js (Platzhalter) -->
-                    </tbody>
+                    <tbody id="valueTableBody"></tbody>
                 </table>
             </div>
         </section>
