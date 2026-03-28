@@ -2,139 +2,108 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Sailor Piece Trading Calculator 🔥</title>
-    <style>
-        /* ANFÄNGER: Das macht die Seite schwarz + neon-glow */
-        body {
-            background: #000;
-            color: #00ff88;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-        }
-        input {
-            width: 90%;
-            padding: 15px;
-            margin: 10px;
-            background: #111;
-            border: 2px solid #00ff88;
-            color: #00ff88;
-            font-size: 18px;
-        }
-        .result {
-            font-size: 24px;
-            margin: 20px;
-            padding: 20px;
-            border: 3px solid #ff0080;
-            background: #111;
-        }
-        .win { color: #00ff88 !important; }
-        .loss { color: #ff4444 !important; }
-        /* Items-Liste (scrollbar) */
-        .items {
-            max-height: 300px;
-            overflow-y: auto;
-            background: #111;
-            border: 1px solid #333;
-            padding: 10px;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Value Calculator</title>
+    <!-- Schrift: gut lesbar, eine Datei von Google (kein Build nötig) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🏴‍☠️ SAILOR PIECE TRADING CALC</h1>
-        
-        <!-- DEIN INVENTAR EINGABE -->
-        <input id="myOffer" placeholder="Dein Angebot: Passive Shard x3830, Boss Ticket x2800, Cursed Finger x170" />
-        
-        <!-- GEGNER TRADE -->
-        <input id="theirOffer" placeholder="Ihr Angebot: Dark Grail x400, Void Fragment x150" />
-        
-        <!-- ERGEBNIS -->
-        <div id="result" class="result">Wert Dein: 0$ | Wert Gegner: 0$ | <span id="diff">= 0%</span></div>
-        
-        <!-- ITEM LISTE (EDITIERBAR) -->
-        <h3>💰 Item Werte (ändere hier!)</h3>
-        <div id="items" class="items">
-            <!-- ITEMS KOMMEN HIER REIN -->
+    <!-- Kopfzeile: Titel + später Admin -->
+    <header class="site-header">
+        <div class="site-header__brand">
+            <span class="site-header__logo" aria-hidden="true"></span>
+            <div>
+                <h1 class="site-header__title">Trading Value Calculator</h1>
+                <p class="site-header__tagline">Dashboard · Platzhalter-UI</p>
+            </div>
         </div>
-        
-        <p><small>Made by Perplexity + David | Update 2026</small></p>
-    </div>
+        <nav class="site-header__nav" aria-label="Hauptnavigation">
+            <!-- Später: echter Admin-Bereich -->
+            <a class="btn btn--ghost" href="#admin" id="adminLink">Admin</a>
+        </nav>
+    </header>
 
-    <script>
-        // 🔥 ANFÄNGER: Hier stehen ALLE Items + Preise
-        // ÄNDERE NUR DIE ZAHLEN hinter dem = !!!
-        const ITEMS = {
-            "Passive Shard": 5000,
-            "Boss Ticket": 20000,
-            "Epic Chest": 1500,
-            "Dungeon Token": 800,
-            // ➕ Füge HIER deine Items hinzu!
-            "Cursed Finger": 1500,
-            "Dark Grail": 800,
-            "Void Fragment": 120,
-            "Tempest Relic": 450
-            // Mehr? Einfach kopieren: "Item": wert,
-        };
+    <main class="main">
+        <!-- Drei Spalten: Angebot | Ergebnis | Gegenangebot -->
+        <div class="dashboard">
+            <section class="panel panel--offer" aria-labelledby="your-offer-heading">
+                <div class="panel__head">
+                    <h2 id="your-offer-heading" class="panel__title">Your Offer</h2>
+                    <span class="panel__badge">Du</span>
+                </div>
+                <p class="panel__hint">Platzhalter – hier kommen später deine Items rein.</p>
+                <ul class="item-list" id="yourOfferList">
+                    <!-- Platzhalter-Einträge -->
+                </ul>
+                <div class="panel__footer">
+                    <span class="label-muted">Zwischensumme (Demo)</span>
+                    <span class="value-pill" id="yourOfferTotal">—</span>
+                </div>
+            </section>
 
-        // Item-Liste bauen (automatisch)
-        function buildItems() {
-            let html = '';
-            for (let [name, value] of Object.entries(ITEMS)) {
-                html += `<div>${name}: ${value}$</div>`;
-            }
-            document.getElementById('items').innerHTML = html;
-        }
+            <section class="panel panel--result" aria-labelledby="result-heading">
+                <div class="panel__head panel__head--center">
+                    <h2 id="result-heading" class="panel__title">Ergebnis</h2>
+                </div>
+                <div class="result-block">
+                    <p class="result-block__label">Differenz (Demo)</p>
+                    <p class="result-block__value" id="resultDiff">+0 %</p>
+                    <p class="result-block__sub" id="resultHint">Noch keine Berechnung aktiv.</p>
+                </div>
+                <div class="result-stats">
+                    <div class="result-stats__row">
+                        <span>Dein Wert</span>
+                        <span id="statYour">0</span>
+                    </div>
+                    <div class="result-stats__row">
+                        <span>Ihr Wert</span>
+                        <span id="statTheir">0</span>
+                    </div>
+                </div>
+            </section>
 
-        // WERT BERECHNEN (MAGIE! 🪄)
-        function calculateValue(input) {
-            let total = 0;
-            // Text splitten: "Item x10" → Item=10
-            const parts = input.split(',');
-            for (let part of parts) {
-                part = part.trim();
-                // Finde "Item xAnzahl"
-                const match = part.match(/(\w+(?:\s\w+)?)\s*x?(\d+)/i);
-                if (match) {
-                    const item = match[1].trim();
-                    const qty = parseInt(match[2]);
-                    total += ITEMS[item] * qty || 0;
-                }
-            }
-            return total;
-        }
+            <section class="panel panel--offer" aria-labelledby="their-offer-heading">
+                <div class="panel__head">
+                    <h2 id="their-offer-heading" class="panel__title">Their Offer</h2>
+                    <span class="panel__badge panel__badge--alt">Gegner</span>
+                </div>
+                <p class="panel__hint">Platzhalter – später der Trade vom anderen Spieler.</p>
+                <ul class="item-list" id="theirOfferList">
+                    <!-- Platzhalter-Einträge -->
+                </ul>
+                <div class="panel__footer">
+                    <span class="label-muted">Zwischensumme (Demo)</span>
+                    <span class="value-pill value-pill--alt" id="theirOfferTotal">—</span>
+                </div>
+            </section>
+        </div>
 
-        // BUTTON DRÜCKEN? Auto-Update!
-        function updateCalc() {
-            const myOffer = document.getElementById('myOffer').value;
-            const theirOffer = document.getElementById('theirOffer').value;
-            
-            const myValue = calculateValue(myOffer);
-            const theirValue = calculateValue(theirOffer);
-            
-            const diff = theirValue - myValue;
-            const percent = (diff / myValue * 100).toFixed(1);
-            
-            document.getElementById('result').innerHTML = 
-                `Dein Wert: ${myValue.toLocaleString()}$ | Gegner: ${theirValue.toLocaleString()}$ | 
-                 <span id="diff" class="${percent > 0 ? 'win' : 'loss'}">${percent > 0 ? '+' : ''}${percent}%</span>`;
-        }
+        <!-- Unten: Itemliste / spätere Value-Tabelle -->
+        <section class="panel panel--wide" aria-labelledby="table-heading">
+            <div class="panel__head">
+                <h2 id="table-heading" class="panel__title">Item-Werte (Referenz)</h2>
+                <span class="panel__badge panel__badge--table">Demo-Daten</span>
+            </div>
+            <div class="table-wrap">
+                <table class="value-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Item</th>
+                            <th scope="col">Wert</th>
+                            <th scope="col">Notiz</th>
+                        </tr>
+                    </thead>
+                    <tbody id="valueTableBody">
+                        <!-- Zeilen kommen aus script.js (Platzhalter) -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-        // START! Seite laden → Items bauen + Enter drücken
-        buildItems();
-        document.getElementById('myOffer').addEventListener('input', updateCalc);
-        document.getElementById('theirOffer').addEventListener('input', updateCalc);
-        
-        // Enter-Taste = Calc!
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') updateCalc();
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
