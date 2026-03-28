@@ -148,6 +148,16 @@
                         <button type="button" id="adminAddBtn" class="btn btn--primary">Neues Item</button>
                         <button type="button" id="adminLogoutBtn" class="btn btn--ghost">Abmelden</button>
                     </div>
+                    <div class="admin-io">
+                        <p class="admin-panel__text admin-io__title">Backup &amp; Wiederherstellen</p>
+                        <div class="admin-panel__actions admin-io__row">
+                            <button type="button" id="adminExportBtn" class="btn btn--ghost">JSON exportieren</button>
+                            <button type="button" id="adminImportBtn" class="btn btn--ghost">JSON importieren</button>
+                            <input type="file" id="adminImportFile" class="sr-only" accept=".json,application/json" title="JSON-Datei wählen">
+                            <button type="button" id="adminResetBtn" class="btn btn--ghost">Auf Standard zurücksetzen</button>
+                        </div>
+                        <p id="adminImportMessage" class="admin-io__message" aria-live="polite"></p>
+                    </div>
                     <div class="admin-table-wrap">
                         <table class="admin-table">
                             <thead>
