@@ -1,34 +1,255 @@
 /**
- * Trading Calculator – Kernlogik
- * Zentrale Item-Werte + zwei Angebotslisten + Live-Berechnung.
+ * Trading Calculator
+ *
+ * NEUE ITEMS / WERTE: ganz oben bei ITEM_CATALOG eintragen (ein Objekt pro Item).
  */
 
-// --- Zentrale Daten: Item-Name → Wert pro Stück (eine Zahl)
-var ITEM_VALUES = {
-    "Void Shard": 1200,
-    "Raid Token": 150,
-    "Mythic Chest": 4500,
-    "Boss Ticket": 2000,
-    "Cursed Finger": 1500,
-    "Dark Grail": 800,
-};
+// --- Zentrale Item-Liste: ein Eintrag = ein Item im Spiel ---
+// Pflicht: name, category, value
+// Optional: rarity, demand (kannst du weglassen oder leer lassen)
+var ITEM_CATALOG = [
+    {
+        name: "Void Shard",
+        category: "Materialien",
+        value: 1200,
+        rarity: "Rare",
+        demand: "Hoch",
+    },
+    {
+        name: "Raid Token",
+        category: "Währung",
+        value: 150,
+        rarity: "Common",
+        demand: "Mittel",
+    },
+    {
+        name: "Mythic Chest",
+        category: "Truhen",
+        value: 4500,
+        rarity: "Legendary",
+        demand: "Sehr hoch",
+    },
+    {
+        name: "Boss Ticket",
+        category: "Tickets",
+        value: 2000,
+        rarity: "Epic",
+    },
+    {
+        name: "Cursed Finger",
+        category: "Artefakte",
+        value: 1500,
+        demand: "Mittel",
+    },
+    {
+        name: "Dark Grail",
+        category: "Artefakte",
+        value: 800,
+        rarity: "Rare",
+        demand: "Niedrig",
+    },
+];
 
-// Abweichung in %, die noch als „Fair“ gilt (einfacher Schwellenwert)
 var FAIR_PERCENT = 2;
 
-// Zwei Seiten: jeweils Liste von { itemKey: string, qty: number }
 var yourLines = [];
 var theirLines = [];
 
-// --- Hilfen: Eingaben prüfen ---
+var FILTER_ALL = "all";
 
-// Nur positive ganze Zahlen; leer oder falsch → null (kein Absturz)
+// --- Katalog-Hilfen ---
+
+// Item per Name finden (Name muss eindeutig sein)
+function getItemByName(name) {
+    var i;
+    for (i = 0; i < ITEM_CATALOG.length; i++) {
+        if (ITEM_CATALOG[i].name === name) {
+            return ITEM_CATALOG[i];
+        }
+    }
+    return null;
+}
+
+// Normale Kategorie für ein Item (fehlt sie, landet es unter „Sonstiges“)
+function getItemCategory(item) {
+    var c = item.category;
+    if (!c || String(c).trim() === "") {
+        return "Sonstiges";
+    }
+    return String(c).trim();
+}
+
+// Alle Kategorien sortiert (ohne Duplikate)
+function getCategories() {
+    var seen = {};
+    var out = [];
+    var i;
+    for (i = 0; i < ITEM_CATALOG.length; i++) {
+        var c = getItemCategory(ITEM_CATALOG[i]);
+        if (!seen[c]) {
+            seen[c] = true;
+            out.push(c);
+        }
+    }
+    out.sort();
+    return out;
+}
+
+// Katalog nach einer Kategorie filtern ("all" = alles)
+function filterItemsByCategory(items, category) {
+    if (!category || category === FILTER_ALL) {
+        return items.slice();
+    }
+    var out = [];
+    var i;
+    for (i = 0; i < items.length; i++) {
+        if (getItemCategory(items[i]) === category) {
+            out.push(items[i]);
+        }
+    }
+    return out;
+}
+
+// Optionale Felder für die Tabelle: leer → Gedankenstrich
+function displayOptional(val) {
+    if (val === undefined || val === null || String(val).trim() === "") {
+        return "—";
+    }
+    return String(val);
+}
+
+// Katalog-Tabelle neu aufbauen (mit Kategorie-Filter aus dem Dropdown)
+function renderItems() {
+    var body = document.getElementById("valueTableBody");
+    var filterEl = document.getElementById("catalogCategoryFilter");
+    var category = filterEl ? filterEl.value : FILTER_ALL;
+
+    body.innerHTML = "";
+
+    if (category === FILTER_ALL) {
+        var cats = getCategories();
+        var c;
+        for (c = 0; c < cats.length; c++) {
+            var catName = cats[c];
+            var inCat = filterItemsByCategory(ITEM_CATALOG, catName);
+            if (inCat.length === 0) {
+                continue;
+            }
+            appendCategoryHeaderRow(body, catName);
+            var j;
+            for (j = 0; j < inCat.length; j++) {
+                appendItemDataRow(body, inCat[j]);
+            }
+        }
+    } else {
+        var list = filterItemsByCategory(ITEM_CATALOG, category);
+        var k;
+        for (k = 0; k < list.length; k++) {
+            appendItemDataRow(body, list[k]);
+        }
+    }
+}
+
+// Eine Tabellen-Zeile: Kategorie-Überschrift (nur bei „Alle“)
+function appendCategoryHeaderRow(body, title) {
+    var tr = document.createElement("tr");
+    tr.className = "value-table__cat-row";
+    var td = document.createElement("td");
+    td.colSpan = 5;
+    td.textContent = title;
+    tr.appendChild(td);
+    body.appendChild(tr);
+}
+
+// Normale Daten-Zeile im Katalog
+function appendItemDataRow(body, item) {
+    var tr = document.createElement("tr");
+    var tdName = document.createElement("td");
+    tdName.textContent = item.name;
+    var tdCat = document.createElement("td");
+    tdCat.className = "value-table__muted";
+    tdCat.textContent = displayOptional(item.category);
+    var tdVal = document.createElement("td");
+    tdVal.className = "value-table__value";
+    tdVal.textContent = formatNum(item.value);
+    var tdRarity = document.createElement("td");
+    tdRarity.className = "value-table__muted";
+    tdRarity.textContent = displayOptional(item.rarity);
+    var tdDemand = document.createElement("td");
+    tdDemand.className = "value-table__muted";
+    tdDemand.textContent = displayOptional(item.demand);
+    tr.appendChild(tdName);
+    tr.appendChild(tdCat);
+    tr.appendChild(tdVal);
+    tr.appendChild(tdRarity);
+    tr.appendChild(tdDemand);
+    body.appendChild(tr);
+}
+
+// Filter-Dropdown mit allen Kategorien füllen
+function fillCatalogFilter() {
+    var sel = document.getElementById("catalogCategoryFilter");
+    if (!sel) {
+        return;
+    }
+    var current = sel.value;
+    sel.innerHTML = "";
+    var optAll = document.createElement("option");
+    optAll.value = FILTER_ALL;
+    optAll.textContent = "Alle Kategorien";
+    sel.appendChild(optAll);
+    var cats = getCategories();
+    var i;
+    for (i = 0; i < cats.length; i++) {
+        var o = document.createElement("option");
+        o.value = cats[i];
+        o.textContent = cats[i];
+        sel.appendChild(o);
+    }
+    if (current && (current === FILTER_ALL || cats.indexOf(current) >= 0)) {
+        sel.value = current;
+    } else {
+        sel.value = FILTER_ALL;
+    }
+}
+
+// Trade-Dropdowns: Items in optgroup pro Kategorie
+function fillSelectOptions(selectId) {
+    var sel = document.getElementById(selectId);
+    sel.innerHTML = "";
+    var opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "— Item wählen —";
+    sel.appendChild(opt0);
+    var cats = getCategories();
+    var c;
+    for (c = 0; c < cats.length; c++) {
+        var catName = cats[c];
+        var inCat = filterItemsByCategory(ITEM_CATALOG, catName);
+        if (inCat.length === 0) {
+            continue;
+        }
+        var og = document.createElement("optgroup");
+        og.label = catName;
+        var j;
+        for (j = 0; j < inCat.length; j++) {
+            var it = inCat[j];
+            var opt = document.createElement("option");
+            opt.value = it.name;
+            opt.textContent = it.name + " (" + formatNum(it.value) + ")";
+            og.appendChild(opt);
+        }
+        sel.appendChild(og);
+    }
+}
+
+// --- Eingaben ---
+
 function parsePositiveInt(raw) {
     var s = String(raw == null ? "" : raw).trim();
     if (s === "") {
         return null;
     }
-    // Keine Komma-/Punkt-Zahlen (nur Ganzzahlen)
     if (/[.,]/.test(s)) {
         return null;
     }
@@ -39,15 +260,14 @@ function parsePositiveInt(raw) {
     return n;
 }
 
-// Wert pro Item aus der zentralen Tabelle (unbekannt → 0)
 function getUnitValue(itemKey) {
-    var v = ITEM_VALUES[itemKey];
-    return typeof v === "number" ? v : 0;
+    var item = getItemByName(itemKey);
+    if (item && typeof item.value === "number") {
+        return item.value;
+    }
+    return 0;
 }
 
-// --- Kernfunktionen (wie gewünscht benannt) ---
-
-// Summe einer Seite: Summe aus (Menge × Stückpreis)
 function calculateSideValue(lines) {
     var total = 0;
     var i;
@@ -62,7 +282,6 @@ function calculateSideValue(lines) {
     return total;
 }
 
-// Vergleich: Win / Fair / Loss + Differenz + Prozent (wo sinnvoll)
 function calculateTradeResult(yourTotal, theirTotal) {
     var diff = theirTotal - yourTotal;
     var percent = null;
@@ -101,12 +320,10 @@ function calculateTradeResult(yourTotal, theirTotal) {
     };
 }
 
-// Zahlen für die Anzeige (de-DE)
 function formatNum(n) {
     return n.toLocaleString("de-DE");
 }
 
-// Ergebnis-Panel + Fußzeilen aktualisieren
 function updateResultUI(result) {
     var outcomeEl = document.getElementById("resultOutcome");
     var percentEl = document.getElementById("resultPercent");
@@ -159,19 +376,54 @@ function updateResultUI(result) {
     }
 }
 
-// --- Listen zeichnen ---
+// Nur Summen + Ergebnis aktualisieren (beide Seiten nötig für den Vergleich)
+function updateTotalsAndResult() {
+    var yourTotal = calculateSideValue(yourLines);
+    var theirTotal = calculateSideValue(theirLines);
+    updateResultUI(calculateTradeResult(yourTotal, theirTotal));
+}
 
-function makeItemRowHtml(side, index, itemKey, qty) {
-    var unit = getUnitValue(itemKey);
+// Eine Trade-Seite neu zeichnen + Gesamtwerte
+function updateTradeSide(side) {
+    renderOfferList(side);
+    updateTotalsAndResult();
+}
+
+function escapeHtml(text) {
+    var map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+    };
+    return String(text).replace(/[&<>"']/g, function (ch) {
+        return map[ch] || ch;
+    });
+}
+
+// Eine Zeile im Angebot (Your / Their)
+function createTradeRow(side, index, itemKey, qty) {
+    var item = getItemByName(itemKey);
+    var unit = item ? item.value : 0;
     var lineTotal = qty * unit;
+    var meta = "";
+    if (item) {
+        meta = escapeHtml(getItemCategory(item));
+    }
     return (
         '<li class="item-row">' +
         '<div class="item-row__main">' +
-        '<div><span class="item-row__name">' +
+        "<div>" +
+        '<span class="item-row__name">' +
         escapeHtml(itemKey) +
-        '</span> <span class="item-row__meta">×' +
+        "</span>" +
+        (meta !== ""
+            ? ' <span class="item-row__meta">' + meta + "</span>"
+            : "") +
+        ' <span class="item-row__meta">×' +
         qty +
-        "</span></div>" +
+        "</span>" +
+        "</div>" +
         "</div>" +
         '<span class="item-row__value">' +
         formatNum(lineTotal) +
@@ -185,19 +437,6 @@ function makeItemRowHtml(side, index, itemKey, qty) {
     );
 }
 
-// Ganz einfaches Escapen für Text in HTML (nur unsere Item-Namen)
-function escapeHtml(text) {
-    var map = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-    };
-    return String(text).replace(/[&<>"']/g, function (ch) {
-        return map[ch] || ch;
-    });
-}
-
 function renderOfferList(side) {
     var listId = side === "your" ? "yourOfferList" : "theirOfferList";
     var lines = side === "your" ? yourLines : theirLines;
@@ -205,22 +444,16 @@ function renderOfferList(side) {
     var html = "";
     var i;
     for (i = 0; i < lines.length; i++) {
-        html += makeItemRowHtml(side, i, lines[i].itemKey, lines[i].qty);
+        html += createTradeRow(side, i, lines[i].itemKey, lines[i].qty);
     }
     ul.innerHTML = html;
 }
 
-// Nach jeder Änderung: neu rechnen und anzeigen
 function refreshAll() {
-    var yourTotal = calculateSideValue(yourLines);
-    var theirTotal = calculateSideValue(theirLines);
-    var trade = calculateTradeResult(yourTotal, theirTotal);
     renderOfferList("your");
     renderOfferList("their");
-    updateResultUI(trade);
+    updateTotalsAndResult();
 }
-
-// --- Hinzufügen / Entfernen ---
 
 function showFormError(side, message) {
     var id = side === "your" ? "yourFormError" : "theirFormError";
@@ -261,7 +494,7 @@ function addItem(side) {
     }
 
     document.getElementById(qtyId).value = "";
-    refreshAll();
+    updateTradeSide(side);
 }
 
 function removeLine(side, index) {
@@ -270,50 +503,19 @@ function removeLine(side, index) {
         return;
     }
     lines.splice(index, 1);
-    refreshAll();
+    updateTradeSide(side);
 }
 
-// --- Dropdowns und Tabelle aus ITEM_VALUES füllen ---
-
-function fillSelectOptions(selectId) {
-    var sel = document.getElementById(selectId);
-    sel.innerHTML = "";
-    var opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = "— Item wählen —";
-    sel.appendChild(opt0);
-    var names = Object.keys(ITEM_VALUES).sort();
-    var i;
-    for (i = 0; i < names.length; i++) {
-        var opt = document.createElement("option");
-        opt.value = names[i];
-        opt.textContent = names[i];
-        sel.appendChild(opt);
+function setupCatalogFilter() {
+    var sel = document.getElementById("catalogCategoryFilter");
+    if (!sel) {
+        return;
     }
+    sel.addEventListener("change", function () {
+        renderItems();
+    });
 }
 
-function fillTable() {
-    var body = document.getElementById("valueTableBody");
-    body.innerHTML = "";
-    var names = Object.keys(ITEM_VALUES).sort();
-    var i;
-    for (i = 0; i < names.length; i++) {
-        var name = names[i];
-        var tr = document.createElement("tr");
-        var td1 = document.createElement("td");
-        td1.textContent = name;
-        var td2 = document.createElement("td");
-        td2.textContent = formatNum(ITEM_VALUES[name]);
-        var td3 = document.createElement("td");
-        td3.textContent = "Referenz";
-        tr.appendChild(td1);
-        tr.appendChild(td2);
-        tr.appendChild(td3);
-        body.appendChild(tr);
-    }
-}
-
-// Klicks: Hinzufügen, Enter in Menge, Zeilen entfernen
 function setupOfferControls() {
     document.getElementById("btnAddYour").addEventListener("click", function () {
         addItem("your");
@@ -347,18 +549,15 @@ function setupOfferControls() {
 }
 
 function init() {
+    fillCatalogFilter();
+    renderItems();
     fillSelectOptions("yourItemSelect");
     fillSelectOptions("theirItemSelect");
-    fillTable();
     yourLines = [];
     theirLines = [];
+    setupCatalogFilter();
     setupOfferControls();
     refreshAll();
 }
 
 document.addEventListener("DOMContentLoaded", init);
-</think>
-
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-Read
