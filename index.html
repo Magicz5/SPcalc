@@ -94,16 +94,25 @@
 
         <section class="panel panel--wide" aria-labelledby="table-heading">
             <div class="panel__head">
-                <h2 id="table-heading" class="panel__title">Item-Werte (Referenz)</h2>
-                <span class="panel__badge panel__badge--table">Zentrale Liste</span>
+                <h2 id="table-heading" class="panel__title">Item-Katalog</h2>
+                <span class="panel__badge panel__badge--table">Alle Werte</span>
+            </div>
+            <p class="panel__hint catalog__hint">Hier siehst du alle Items aus der zentralen Liste. Filter nach Kategorie – die Trade-Dropdowns darüber enthalten dieselben Items.</p>
+            <div class="catalog-toolbar">
+                <label class="catalog-toolbar__label" for="catalogCategoryFilter">Kategorie</label>
+                <select id="catalogCategoryFilter" class="catalog-toolbar__select">
+                    <option value="all">Alle Kategorien</option>
+                </select>
             </div>
             <div class="table-wrap">
                 <table class="value-table">
                     <thead>
                         <tr>
                             <th scope="col">Item</th>
+                            <th scope="col">Kategorie</th>
                             <th scope="col">Wert</th>
-                            <th scope="col">Hinweis</th>
+                            <th scope="col">Seltenheit</th>
+                            <th scope="col">Nachfrage</th>
                         </tr>
                     </thead>
                     <tbody id="valueTableBody"></tbody>

@@ -507,8 +507,62 @@ body {
     background: rgba(255, 255, 255, 0.02);
 }
 
-.value-table td:nth-child(2) {
+.catalog__hint {
+    margin-top: 0;
+}
+
+.catalog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.catalog-toolbar__label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.catalog-toolbar__select {
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--text);
+    background: #0e1117;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.65rem;
+    min-width: 12rem;
+    max-width: 100%;
+}
+
+.catalog-toolbar__select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.value-table__value {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
     color: var(--accent-2);
+}
+
+.value-table__muted {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.value-table tr.value-table__cat-row td {
+    background: #151a24;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    border-bottom-color: var(--border);
+}
+
+.value-table tr.value-table__cat-row:hover td {
+    background: #151a24;
 }
