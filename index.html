@@ -1,17 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-<title>Sailor Piece Trading Calculator</title>
-<style>/* Cool CSS hier*/</style>
+    <meta charset="UTF-8">
+    <title>Sailor Piece Trading Calculator 🔥</title>
+    <style>
+        /* ANFÄNGER: Das macht die Seite schwarz + neon-glow */
+        body {
+            background: #000;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        input {
+            width: 90%;
+            padding: 15px;
+            margin: 10px;
+            background: #111;
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-size: 18px;
+        }
+        .result {
+            font-size: 24px;
+            margin: 20px;
+            padding: 20px;
+            border: 3px solid #ff0080;
+            background: #111;
+        }
+        .win { color: #00ff88 !important; }
+        .loss { color: #ff4444 !important; }
+        /* Items-Liste (scrollbar) */
+        .items {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #111;
+            border: 1px solid #333;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
-<div id="calculator">
-  <input placeholder="Dein Inventar (Passive Shard x3830 )">
-  <input placeholder="Gegner Trade">
-  <h2 id="result">Wert: 0 | Win/Loss: 0%</h2>
-</div>
-<script>
-// Items & Preise + Calc-Logic
-</script>
+    <div class="container">
+        <h1>🏴‍☠️ SAILOR PIECE TRADING CALC</h1>
+        
+        <!-- DEIN INVENTAR EINGABE -->
+        <input id="myOffer" placeholder="Dein Angebot: Passive Shard x3830, Boss Ticket x2800, Cursed Finger x170" />
+        
+        <!-- GEGNER TRADE -->
+        <input id="theirOffer" placeholder="Ihr Angebot: Dark Grail x400, Void Fragment x150" />
+        
+        <!-- ERGEBNIS -->
+        <div id="result" class="result">Wert Dein: 0$ | Wert Gegner: 0$ | <span id="diff">= 0%</span></div>
+        
+        <!-- ITEM LISTE (EDITIERBAR) -->
+        <h3>💰 Item Werte (ändere hier!)</h3>
+        <div id="items" class="items">
+            <!-- ITEMS KOMMEN HIER REIN -->
+        </div>
+        
+        <p><small>Made by Perplexity + David | Update 2026</small></p>
+    </div>
+
+    <script>
+        // 🔥 ANFÄNGER: Hier stehen ALLE Items + Preise
+        // ÄNDERE NUR DIE ZAHLEN hinter dem = !!!
+        const ITEMS = {
+            "Passive Shard": 5000,
+            "Boss Ticket": 20000,
+            "Epic Chest": 1500,
+            "Dungeon Token": 800,
+            // ➕ Füge HIER deine Items hinzu!
+            "Cursed Finger": 1500,
+            "Dark Grail": 800,
+            "Void Fragment": 120,
+            "Tempest Relic": 450
+            // Mehr? Einfach kopieren: "Item": wert,
+        };
+
+        // Item-Liste bauen (automatisch)
+        function buildItems() {
+            let html = '';
+            for (let [name, value] of Object.entries(ITEMS)) {
+                html += `<div>${name}: ${value}$</div>`;
+            }
+            document.getElementById('items').innerHTML = html;
+        }
+
+        // WERT BERECHNEN (MAGIE! 🪄)
+        function calculateValue(input) {
+            let total = 0;
+            // Text splitten: "Item x10" → Item=10
+            const parts = input.split(',');
+            for (let part of parts) {
+                part = part.trim();
+                // Finde "Item xAnzahl"
+                const match = part.match(/(\w+(?:\s\w+)?)\s*x?(\d+)/i);
+                if (match) {
+                    const item = match[1].trim();
+                    const qty = parseInt(match[2]);
+                    total += ITEMS[item] * qty || 0;
+                }
+            }
+            return total;
+        }
+
+        // BUTTON DRÜCKEN? Auto-Update!
+        function updateCalc() {
+            const myOffer = document.getElementById('myOffer').value;
+            const theirOffer = document.getElementById('theirOffer').value;
+            
+            const myValue = calculateValue(myOffer);
+            const theirValue = calculateValue(theirOffer);
+            
+            const diff = theirValue - myValue;
+            const percent = (diff / myValue * 100).toFixed(1);
+            
+            document.getElementById('result').innerHTML = 
+                `Dein Wert: ${myValue.toLocaleString()}$ | Gegner: ${theirValue.toLocaleString()}$ | 
+                 <span id="diff" class="${percent > 0 ? 'win' : 'loss'}">${percent > 0 ? '+' : ''}${percent}%</span>`;
+        }
+
+        // START! Seite laden → Items bauen + Enter drücken
+        buildItems();
+        document.getElementById('myOffer').addEventListener('input', updateCalc);
+        document.getElementById('theirOffer').addEventListener('input', updateCalc);
+        
+        // Enter-Taste = Calc!
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') updateCalc();
+        });
+    </script>
 </body>
 </html>
