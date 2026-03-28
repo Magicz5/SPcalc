@@ -51,6 +51,9 @@ var ITEM_CATALOG = [
     },
 ];
 
+// Kopie der Startliste nur für „Auf Standard zurücksetzen“ (wird beim Laden erzeugt)
+var DEFAULT_ITEM_CATALOG = JSON.parse(JSON.stringify(ITEM_CATALOG));
+
 var FAIR_PERCENT = 2;
 
 var yourLines = [];
@@ -531,6 +534,176 @@ function refreshMainAfterCatalogChange() {
     refreshAll();
 }
 
+// --- Import / Export / Standardliste (JSON) ---
+
+// Kurzer Hinweistext unter den Import/Export-Buttons
+function setAdminImportMessage(text, kind) {
+    var el = document.getElementById("adminImportMessage");
+    if (!el) {
+        return;
+    }
+    el.textContent = text || "";
+    el.classList.remove("is-error", "is-ok");
+    if (kind === "error") {
+        el.classList.add("is-error");
+    } else if (kind === "ok") {
+        el.classList.add("is-ok");
+    }
+}
+
+// Rohdaten aus JSON prüfen und saubere Item-Objekte liefern
+function validateImportedData(data) {
+    var list = null;
+    if (data === null || data === undefined) {
+        return { ok: false, error: "Datei ist leer oder kein gültiges JSON." };
+    }
+    if (Array.isArray(data)) {
+        list = data;
+    } else if (typeof data === "object" && Array.isArray(data.items)) {
+        list = data.items;
+    } else {
+        return {
+            ok: false,
+            error: 'Erwartet wird ein JSON-Array oder { "items": [ ... ] }.',
+        };
+    }
+    if (list.length === 0) {
+        return { ok: false, error: "Die Liste enthält keine Items." };
+    }
+
+    var seenNames = {};
+    var out = [];
+    var i;
+    for (i = 0; i < list.length; i++) {
+        var row = list[i];
+        if (row === null || typeof row !== "object") {
+            return { ok: false, error: "Eintrag " + (i + 1) + " ist kein Objekt." };
+        }
+        if (row.name === undefined || row.name === null || String(row.name).trim() === "") {
+            return { ok: false, error: "Eintrag " + (i + 1) + " hat keinen Namen." };
+        }
+        var name = String(row.name).trim();
+        if (seenNames[name]) {
+            return { ok: false, error: 'Doppelter Name: "' + name + '".' };
+        }
+        seenNames[name] = true;
+
+        var val = row.value;
+        if (typeof val === "string") {
+            val = parseFloat(String(val).replace(",", "."));
+        }
+        if (typeof val !== "number" || isNaN(val) || !isFinite(val)) {
+            return {
+                ok: false,
+                error: 'Eintrag "' + name + '" hat keinen gültigen Zahlenwert bei "value".',
+            };
+        }
+        if (val < 0) {
+            return { ok: false, error: 'Eintrag "' + name + '" hat einen negativen Wert.' };
+        }
+
+        var cat = row.category;
+        if (cat === undefined || cat === null || String(cat).trim() === "") {
+            cat = "Sonstiges";
+        } else {
+            cat = String(cat).trim();
+        }
+
+        out.push({
+            name: name,
+            category: cat,
+            value: val,
+            rarity: row.rarity != null ? String(row.rarity) : "",
+            demand: row.demand != null ? String(row.demand) : "",
+        });
+    }
+    return { ok: true, items: out };
+}
+
+// Trade-Zeilen entfernen, wenn der Item-Name nach Import nicht mehr existiert
+function pruneTradeLinesAfterImport() {
+    var y = [];
+    var i;
+    for (i = 0; i < yourLines.length; i++) {
+        if (getItemByName(yourLines[i].itemKey)) {
+            y.push(yourLines[i]);
+        }
+    }
+    yourLines = y;
+    var t = [];
+    for (i = 0; i < theirLines.length; i++) {
+        if (getItemByName(theirLines[i].itemKey)) {
+            t.push(theirLines[i]);
+        }
+    }
+    theirLines = t;
+}
+
+// Aktuellen Katalog als JSON-Datei herunterladen
+function exportItemsToJson() {
+    var json = JSON.stringify(ITEM_CATALOG, null, 2);
+    var blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "spcalc-items.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setAdminImportMessage("Export gespeichert (Download).", "ok");
+}
+
+// JSON-Text übernehmen (z. B. aus Datei)
+function importItemsFromJson(jsonString) {
+    var parsed;
+    try {
+        parsed = JSON.parse(jsonString);
+    } catch (err) {
+        setAdminImportMessage("Keine gültige JSON-Datei (Syntaxfehler).", "error");
+        return false;
+    }
+
+    var result = validateImportedData(parsed);
+    if (!result.ok) {
+        setAdminImportMessage(result.error, "error");
+        return false;
+    }
+
+    ITEM_CATALOG.length = 0;
+    var i;
+    for (i = 0; i < result.items.length; i++) {
+        ITEM_CATALOG.push(result.items[i]);
+    }
+    pruneTradeLinesAfterImport();
+    renderAdminItems();
+    refreshMainAfterCatalogChange();
+    setAdminImportMessage("Import erfolgreich. Liste wurde ersetzt.", "ok");
+    return true;
+}
+
+// Eingebaute Standardliste wiederherstellen, Trades leeren
+function resetToDefaultItems() {
+    var ok = window.confirm(
+        "Alle Items auf die eingebaute Standardliste zurücksetzen? Deine aktuelle Liste und die Trade-Einträge werden verworfen."
+    );
+    if (!ok) {
+        return;
+    }
+
+    var fresh = JSON.parse(JSON.stringify(DEFAULT_ITEM_CATALOG));
+    ITEM_CATALOG.length = 0;
+    var i;
+    for (i = 0; i < fresh.length; i++) {
+        ITEM_CATALOG.push(fresh[i]);
+    }
+    yourLines = [];
+    theirLines = [];
+    renderAdminItems();
+    refreshMainAfterCatalogChange();
+    setAdminImportMessage("Standardliste wurde geladen.", "ok");
+}
+
 // Zahl aus Textfeld (Komma oder Punkt erlaubt)
 function parseItemValue(raw) {
     var s = String(raw == null ? "" : raw).trim().replace(",", ".");
@@ -856,6 +1029,44 @@ function setupAdmin() {
     if (logoutBtn) {
         logoutBtn.addEventListener("click", function () {
             adminLogout();
+        });
+    }
+
+    var exportBtn = document.getElementById("adminExportBtn");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", function () {
+            exportItemsToJson();
+        });
+    }
+
+    var importBtn = document.getElementById("adminImportBtn");
+    var importFile = document.getElementById("adminImportFile");
+    if (importBtn && importFile) {
+        importBtn.addEventListener("click", function () {
+            importFile.click();
+        });
+        importFile.addEventListener("change", function (e) {
+            var target = e.target;
+            var file = target.files && target.files[0];
+            if (!file) {
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function () {
+                importItemsFromJson(String(reader.result || ""));
+            };
+            reader.onerror = function () {
+                setAdminImportMessage("Datei konnte nicht gelesen werden.", "error");
+            };
+            reader.readAsText(file);
+            target.value = "";
+        });
+    }
+
+    var resetBtn = document.getElementById("adminResetBtn");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", function () {
+            resetToDefaultItems();
         });
     }
 
