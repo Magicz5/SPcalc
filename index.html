@@ -18,6 +18,9 @@
                 <p class="site-header__tagline">Live · Trade-Vergleich</p>
             </div>
         </div>
+        <nav class="site-header__nav" aria-label="Extras">
+            <a class="btn btn--ghost" href="#admin" id="adminLink">Admin</a>
+        </nav>
     </header>
 
     <main class="main">
@@ -120,6 +123,50 @@
             </div>
         </section>
     </main>
+
+    <!-- Admin: Overlay + Panel (Inhalt steuert script.js) -->
+    <div id="adminModal" class="admin-modal" aria-hidden="true">
+        <div class="admin-modal__backdrop" id="adminBackdrop" role="presentation"></div>
+        <div class="admin-modal__dialog" role="dialog" aria-labelledby="adminModalTitle" aria-modal="true">
+            <div class="admin-panel">
+                <div class="admin-panel__head">
+                    <h2 id="adminModalTitle" class="admin-panel__title">Admin · Items</h2>
+                    <button type="button" class="btn-icon btn-icon--close" id="adminCloseBtn" aria-label="Schließen">×</button>
+                </div>
+
+                <div id="adminLoginView" class="admin-panel__block">
+                    <p class="admin-panel__text">Passwort zum Bearbeiten der Item-Liste:</p>
+                    <label class="sr-only" for="adminPasswordInput">Passwort</label>
+                    <input type="password" id="adminPasswordInput" class="admin-modal__input" autocomplete="current-password" placeholder="Passwort">
+                    <p id="adminLoginError" class="form-error" aria-live="polite"></p>
+                    <button type="button" id="adminLoginBtn" class="btn btn--primary">Anmelden</button>
+                </div>
+
+                <div id="adminEditView" class="admin-panel__block" hidden>
+                    <p class="admin-panel__text">Hier änderst du Namen, Werte und Kategorien. Die Hauptseite aktualisiert sich direkt.</p>
+                    <div class="admin-panel__actions">
+                        <button type="button" id="adminAddBtn" class="btn btn--primary">Neues Item</button>
+                        <button type="button" id="adminLogoutBtn" class="btn btn--ghost">Abmelden</button>
+                    </div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Kategorie</th>
+                                    <th scope="col">Wert</th>
+                                    <th scope="col">Seltenheit</th>
+                                    <th scope="col">Nachfrage</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

@@ -2,6 +2,7 @@
  * Trading Calculator
  *
  * NEUE ITEMS / WERTE: ganz oben bei ITEM_CATALOG eintragen (ein Objekt pro Item).
+ * Admin: Passwort weiter unten bei ADMIN_PASSWORD (nur statische Seite).
  */
 
 // --- Zentrale Item-Liste: ein Eintrag = ein Item im Spiel ---
@@ -56,6 +57,10 @@ var yourLines = [];
 var theirLines = [];
 
 var FILTER_ALL = "all";
+
+// --- Admin (Passwort im Klartext im Code — jeder kann es im Browser lesen) ---
+var ADMIN_PASSWORD = "admin123";
+var adminSessionActive = false;
 
 // --- Katalog-Hilfen ---
 
@@ -516,6 +521,354 @@ function setupCatalogFilter() {
     });
 }
 
+// Katalog geändert: Hauptseite neu (Katalog-Tabelle, Dropdowns, Summen)
+// Kein renderAdminItems hier — damit Eingaben im Admin-Formular nicht springen.
+function refreshMainAfterCatalogChange() {
+    fillCatalogFilter();
+    renderItems();
+    fillSelectOptions("yourItemSelect");
+    fillSelectOptions("theirItemSelect");
+    refreshAll();
+}
+
+// Zahl aus Textfeld (Komma oder Punkt erlaubt)
+function parseItemValue(raw) {
+    var s = String(raw == null ? "" : raw).trim().replace(",", ".");
+    var n = parseFloat(s);
+    if (isNaN(n)) {
+        return 0;
+    }
+    return n;
+}
+
+// Prüfen, ob ein anderer Eintrag schon denselben Namen hat
+function nameExistsBesides(name, excludeIndex) {
+    var i;
+    for (i = 0; i < ITEM_CATALOG.length; i++) {
+        if (i === excludeIndex) {
+            continue;
+        }
+        if (ITEM_CATALOG[i].name === name) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Wenn der Item-Name im Katalog geändert wird: Trade-Zeilen mitziehen
+function renameItemInTradeLines(oldName, newName) {
+    if (oldName === newName) {
+        return;
+    }
+    var i;
+    for (i = 0; i < yourLines.length; i++) {
+        if (yourLines[i].itemKey === oldName) {
+            yourLines[i].itemKey = newName;
+        }
+    }
+    for (i = 0; i < theirLines.length; i++) {
+        if (theirLines[i].itemKey === oldName) {
+            theirLines[i].itemKey = newName;
+        }
+    }
+}
+
+// Ein Feld eines Items ändern (wird von den Admin-Eingaben aufgerufen)
+function updateItemValue(index, field, rawValue) {
+    var item = ITEM_CATALOG[index];
+    if (!item) {
+        return;
+    }
+
+    if (field === "name") {
+        var newName = String(rawValue).trim();
+        if (newName === "") {
+            return;
+        }
+        if (nameExistsBesides(newName, index)) {
+            window.alert("Dieser Name wird schon von einem anderen Item verwendet.");
+            renderAdminItems();
+            return;
+        }
+        var oldName = item.name;
+        item.name = newName;
+        renameItemInTradeLines(oldName, newName);
+    } else if (field === "category") {
+        item.category = String(rawValue);
+    } else if (field === "value") {
+        item.value = parseItemValue(rawValue);
+    } else if (field === "rarity") {
+        item.rarity = String(rawValue);
+    } else if (field === "demand") {
+        item.demand = String(rawValue);
+    }
+
+    refreshMainAfterCatalogChange();
+}
+
+// Item löschen (Index in ITEM_CATALOG)
+function deleteItem(index) {
+    var item = ITEM_CATALOG[index];
+    if (!item) {
+        return;
+    }
+    var removedName = item.name;
+    var ok = window.confirm('Item "' + removedName + '" wirklich löschen?');
+    if (!ok) {
+        return;
+    }
+
+    ITEM_CATALOG.splice(index, 1);
+
+    var newYour = [];
+    var a;
+    for (a = 0; a < yourLines.length; a++) {
+        if (yourLines[a].itemKey !== removedName) {
+            newYour.push(yourLines[a]);
+        }
+    }
+    yourLines = newYour;
+
+    var newTheir = [];
+    for (a = 0; a < theirLines.length; a++) {
+        if (theirLines[a].itemKey !== removedName) {
+            newTheir.push(theirLines[a]);
+        }
+    }
+    theirLines = newTheir;
+
+    renderAdminItems();
+    refreshMainAfterCatalogChange();
+}
+
+// Leeres Item anhängen und Tabelle neu
+function addNewItem() {
+    ITEM_CATALOG.push({
+        name: "Neues Item " + (ITEM_CATALOG.length + 1),
+        category: "Sonstiges",
+        value: 0,
+        rarity: "",
+        demand: "",
+    });
+    renderAdminItems();
+    refreshMainAfterCatalogChange();
+}
+
+// Admin-Tabelle aus ITEM_CATALOG bauen
+function renderAdminItems() {
+    var body = document.getElementById("adminTableBody");
+    if (!body) {
+        return;
+    }
+    body.innerHTML = "";
+
+    var i;
+    for (i = 0; i < ITEM_CATALOG.length; i++) {
+        (function (idx) {
+            var item = ITEM_CATALOG[idx];
+            var tr = document.createElement("tr");
+
+            function addTextInput(field, extraClass) {
+                var td = document.createElement("td");
+                var inp = document.createElement("input");
+                inp.type = "text";
+                inp.className = "admin-table__input" + (extraClass ? " " + extraClass : "");
+                inp.value =
+                    item[field] === undefined || item[field] === null ? "" : item[field];
+                // Name erst beim Verlassen des Felds speichern (sonst bricht die Zuordnung beim Tippen)
+                if (field === "name") {
+                    inp.addEventListener("change", function () {
+                        updateItemValue(idx, "name", inp.value);
+                    });
+                } else {
+                    inp.addEventListener("input", function () {
+                        updateItemValue(idx, field, inp.value);
+                    });
+                }
+                td.appendChild(inp);
+                tr.appendChild(td);
+            }
+
+            addTextInput("name");
+            addTextInput("category");
+            var tdVal = document.createElement("td");
+            var valInp = document.createElement("input");
+            valInp.type = "text";
+            valInp.className = "admin-table__input admin-table__input--narrow";
+            valInp.value = String(item.value);
+            valInp.addEventListener("input", function () {
+                updateItemValue(idx, "value", valInp.value);
+            });
+            tdVal.appendChild(valInp);
+            tr.appendChild(tdVal);
+
+            addTextInput("rarity");
+            addTextInput("demand");
+
+            var tdDel = document.createElement("td");
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "btn btn--danger btn--small";
+            btn.textContent = "Löschen";
+            btn.addEventListener("click", function () {
+                deleteItem(idx);
+            });
+            tdDel.appendChild(btn);
+            tr.appendChild(tdDel);
+
+            body.appendChild(tr);
+        })(i);
+    }
+}
+
+function checkAdminPassword() {
+    var input = document.getElementById("adminPasswordInput");
+    var err = document.getElementById("adminLoginError");
+    var loginView = document.getElementById("adminLoginView");
+    var editView = document.getElementById("adminEditView");
+    if (!input || !err || !loginView || !editView) {
+        return;
+    }
+
+    var pw = input.value;
+    if (pw === ADMIN_PASSWORD) {
+        adminSessionActive = true;
+        err.textContent = "";
+        loginView.hidden = true;
+        editView.hidden = false;
+        renderAdminItems();
+    } else {
+        adminSessionActive = false;
+        err.textContent = "Falsches Passwort.";
+    }
+}
+
+function openAdminPanel() {
+    var modal = document.getElementById("adminModal");
+    var loginView = document.getElementById("adminLoginView");
+    var editView = document.getElementById("adminEditView");
+    if (!modal || !loginView || !editView) {
+        return;
+    }
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+
+    if (adminSessionActive) {
+        loginView.hidden = true;
+        editView.hidden = false;
+        renderAdminItems();
+    } else {
+        loginView.hidden = false;
+        editView.hidden = true;
+        var pwInput = document.getElementById("adminPasswordInput");
+        if (pwInput) {
+            pwInput.focus();
+        }
+    }
+}
+
+function closeAdminPanel() {
+    var modal = document.getElementById("adminModal");
+    if (!modal) {
+        return;
+    }
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+
+    if (window.location.hash === "#admin") {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+}
+
+function adminLogout() {
+    adminSessionActive = false;
+    var input = document.getElementById("adminPasswordInput");
+    var loginView = document.getElementById("adminLoginView");
+    var editView = document.getElementById("adminEditView");
+    var err = document.getElementById("adminLoginError");
+    if (input) {
+        input.value = "";
+    }
+    if (err) {
+        err.textContent = "";
+    }
+    if (loginView) {
+        loginView.hidden = false;
+    }
+    if (editView) {
+        editView.hidden = true;
+    }
+}
+
+function setupAdmin() {
+    var link = document.getElementById("adminLink");
+    if (link) {
+        link.addEventListener("click", function (e) {
+            e.preventDefault();
+            if (window.location.hash !== "#admin") {
+                window.location.hash = "#admin";
+            }
+            openAdminPanel();
+        });
+    }
+
+    var closeBtn = document.getElementById("adminCloseBtn");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+            closeAdminPanel();
+        });
+    }
+
+    var backdrop = document.getElementById("adminBackdrop");
+    if (backdrop) {
+        backdrop.addEventListener("click", function () {
+            closeAdminPanel();
+        });
+    }
+
+    var loginBtn = document.getElementById("adminLoginBtn");
+    if (loginBtn) {
+        loginBtn.addEventListener("click", function () {
+            checkAdminPassword();
+        });
+    }
+
+    var pwInput = document.getElementById("adminPasswordInput");
+    if (pwInput) {
+        pwInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                checkAdminPassword();
+            }
+        });
+    }
+
+    var addBtn = document.getElementById("adminAddBtn");
+    if (addBtn) {
+        addBtn.addEventListener("click", function () {
+            addNewItem();
+        });
+    }
+
+    var logoutBtn = document.getElementById("adminLogoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", function () {
+            adminLogout();
+        });
+    }
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            var modal = document.getElementById("adminModal");
+            if (modal && modal.classList.contains("is-open")) {
+                closeAdminPanel();
+            }
+        }
+    });
+}
+
 function setupOfferControls() {
     document.getElementById("btnAddYour").addEventListener("click", function () {
         addItem("your");
@@ -557,7 +910,12 @@ function init() {
     theirLines = [];
     setupCatalogFilter();
     setupOfferControls();
+    setupAdmin();
     refreshAll();
+
+    if (window.location.hash === "#admin") {
+        openAdminPanel();
+    }
 }
 
 document.addEventListener("DOMContentLoaded", init);
