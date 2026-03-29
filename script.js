@@ -206,6 +206,40 @@ function getTranslation(group, key) {
     return key; // Fallback auf den Key selbst
 }
 
+// --- Persistence ---
+function saveToLocalStorage() {
+    localStorage.setItem("SPcalc_catalog", JSON.stringify(ITEM_CATALOG));
+    // Wir speichern nur die veränderbaren Teile von TRANSLATIONS
+    var meta = {
+        categories: { en: TRANSLATIONS.en.categories, de: TRANSLATIONS.de.categories },
+        rarity: { en: TRANSLATIONS.en.rarity, de: TRANSLATIONS.de.rarity },
+        demand: { en: TRANSLATIONS.en.demand, de: TRANSLATIONS.de.demand }
+    };
+    localStorage.setItem("SPcalc_metadata", JSON.stringify(meta));
+}
+
+function loadFromLocalStorage() {
+    var savedCatalog = localStorage.getItem("SPcalc_catalog");
+    if (savedCatalog) {
+        var parsed = JSON.parse(savedCatalog);
+        ITEM_CATALOG.length = 0;
+        for (var i = 0; i < parsed.length; i++) {
+            ITEM_CATALOG.push(parsed[i]);
+        }
+    }
+
+    var savedMeta = localStorage.getItem("SPcalc_metadata");
+    if (savedMeta) {
+        var meta = JSON.parse(savedMeta);
+        TRANSLATIONS.en.categories = meta.categories.en;
+        TRANSLATIONS.de.categories = meta.categories.de;
+        TRANSLATIONS.en.rarity = meta.rarity.en;
+        TRANSLATIONS.de.rarity = meta.rarity.de;
+        TRANSLATIONS.en.demand = meta.demand.en;
+        TRANSLATIONS.de.demand = meta.demand.de;
+    }
+}
+
 var currentLang = "en"; // Standard ist Englisch
 
 // Hilfsfunktion zum Holen von Texten
@@ -840,6 +874,7 @@ function setupCatalogFilter() {
 // Katalog geändert: Hauptseite neu (Katalog-Tabelle, Dropdowns, Summen)
 // Kein renderAdminItems hier — damit Eingaben im Admin-Formular nicht springen.
 function refreshMainAfterCatalogChange() {
+    saveToLocalStorage();
     fillCatalogFilter();
     renderItems();
     fillSelectOptions("yourItemSelect");
@@ -1012,11 +1047,109 @@ function resetToDefaultItems() {
     for (i = 0; i < fresh.length; i++) {
         ITEM_CATALOG.push(fresh[i]);
     }
-    yourLines = [];
-    theirLines = [];
+    
+    // LocalStorage leeren
+    localStorage.removeItem("SPcalc_catalog");
+    localStorage.removeItem("SPcalc_metadata");
+    
+    // Seite neu laden um TRANSLATIONS zurückzusetzen (oder manuell zurücksetzen)
+    // Da TRANSLATIONS ein komplexes Objekt ist, ist ein Reload am sichersten
+    window.location.reload();
+}
+
+// --- Metadaten-Verwaltung (Kategorien, Seltenheit, Nachfrage) ---
+
+function renderMetadataList(group, listId) {
+    var listEl = document.getElementById(listId);
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    var keys = Object.keys(TRANSLATIONS.en[group]);
+    keys.forEach(function(key) {
+        // "none" und "other" schützen (nicht löschbar)
+        var isProtected = (key === "none" || key === "other");
+
+        var li = document.createElement("li");
+        li.className = "admin-metadata__item";
+
+        var info = document.createElement("div");
+        info.className = "admin-metadata__info";
+        
+        var keySpan = document.createElement("span");
+        keySpan.className = "admin-metadata__key";
+        keySpan.textContent = key;
+        
+        var nameSpan = document.createElement("span");
+        nameSpan.className = "admin-metadata__names";
+        nameSpan.textContent = "EN: " + TRANSLATIONS.en[group][key] + " | DE: " + TRANSLATIONS.de[group][key];
+
+        info.appendChild(keySpan);
+        info.appendChild(nameSpan);
+        li.appendChild(info);
+
+        if (!isProtected) {
+            var delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "btn btn--danger btn--small";
+            delBtn.textContent = "×";
+            delBtn.title = "Löschen";
+            delBtn.onclick = function() {
+                deleteMetadata(group, key);
+            };
+            li.appendChild(delBtn);
+        }
+
+        listEl.appendChild(li);
+    });
+}
+
+function renderAllMetadataLists() {
+    renderMetadataList("categories", "adminCatList");
+    renderMetadataList("rarity", "adminRarityList");
+    renderMetadataList("demand", "adminDemandList");
+}
+
+function addMetadata(group, keyId, enId, deId) {
+    var key = document.getElementById(keyId).value.trim().toLowerCase();
+    var nameEn = document.getElementById(enId).value.trim();
+    var nameDe = document.getElementById(deId).value.trim();
+
+    if (!key || !nameEn || !nameDe) {
+        alert("Bitte Key, EN-Name und DE-Name ausfüllen.");
+        return;
+    }
+
+    if (TRANSLATIONS.en[group][key]) {
+        alert("Dieser Key existiert bereits.");
+        return;
+    }
+
+    TRANSLATIONS.en[group][key] = nameEn;
+    TRANSLATIONS.de[group][key] = nameDe;
+
+    // Inputs leeren
+    document.getElementById(keyId).value = "";
+    document.getElementById(enId).value = "";
+    document.getElementById(deId).value = "";
+
+    saveToLocalStorage();
+    renderAllMetadataLists();
+    renderAdminItems(); // Dropdowns aktualisieren
+    refreshMainAfterCatalogChange();
+}
+
+function deleteMetadata(group, key) {
+    if (!confirm("Wirklich '" + key + "' löschen? Items mit diesem Key behalten ihn, aber er wird nicht mehr im Dropdown angezeigt.")) {
+        return;
+    }
+
+    delete TRANSLATIONS.en[group][key];
+    delete TRANSLATIONS.de[group][key];
+
+    saveToLocalStorage();
+    renderAllMetadataLists();
     renderAdminItems();
     refreshMainAfterCatalogChange();
-    setAdminImportMessage(t("standardLoaded"), "ok");
 }
 
 // Zahl aus Textfeld (Komma oder Punkt erlaubt)
@@ -1274,6 +1407,7 @@ function checkAdminPassword() {
         loginView.hidden = true;
         editView.hidden = false;
         renderAdminItems();
+        renderAllMetadataLists();
     } else {
         adminSessionActive = false;
         err.textContent = t("wrongPassword");
@@ -1296,6 +1430,7 @@ function openAdminPanel() {
         loginView.hidden = true;
         editView.hidden = false;
         renderAdminItems();
+        renderAllMetadataLists();
     } else {
         loginView.hidden = false;
         editView.hidden = true;
@@ -1389,6 +1524,26 @@ function setupAdmin() {
         });
     }
 
+    // Metadata Add Buttons
+    var btnAddCat = document.getElementById("btnAddCat");
+    if (btnAddCat) {
+        btnAddCat.addEventListener("click", function() {
+            addMetadata("categories", "newCatKey", "newCatEn", "newCatDe");
+        });
+    }
+    var btnAddRarity = document.getElementById("btnAddRarity");
+    if (btnAddRarity) {
+        btnAddRarity.addEventListener("click", function() {
+            addMetadata("rarity", "newRarityKey", "newRarityEn", "newRarityDe");
+        });
+    }
+    var btnAddDemand = document.getElementById("btnAddDemand");
+    if (btnAddDemand) {
+        btnAddDemand.addEventListener("click", function() {
+            addMetadata("demand", "newDemandKey", "newDemandEn", "newDemandDe");
+        });
+    }
+
     var logoutBtn = document.getElementById("adminLogoutBtn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", function () {
@@ -1477,6 +1632,9 @@ function setupOfferControls() {
 }
 
 function init() {
+    // Vor dem Rendern laden
+    loadFromLocalStorage();
+
     // Sprache initialisieren (Standard Englisch)
     updateStaticTexts();
 

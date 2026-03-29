@@ -154,6 +154,43 @@
                         <button type="button" id="adminAddBtn" class="btn btn--primary">Neues Item</button>
                         <button type="button" id="adminLogoutBtn" class="btn btn--ghost">Abmelden</button>
                     </div>
+
+                    <!-- NEU: Metadaten-Verwaltung -->
+                    <div class="admin-metadata">
+                        <div class="admin-metadata__section">
+                            <p class="admin-panel__text admin-io__title">Kategorien verwalten</p>
+                            <div class="admin-metadata__controls">
+                                <input type="text" id="newCatKey" class="admin-table__input" placeholder="Key (z.B. pets)">
+                                <input type="text" id="newCatEn" class="admin-table__input" placeholder="Name (EN)">
+                                <input type="text" id="newCatDe" class="admin-table__input" placeholder="Name (DE)">
+                                <button type="button" id="btnAddCat" class="btn btn--primary btn--small">Hinzufügen</button>
+                            </div>
+                            <ul id="adminCatList" class="admin-metadata__list"></ul>
+                        </div>
+
+                        <div class="admin-metadata__section">
+                            <p class="admin-panel__text admin-io__title">Seltenheiten verwalten</p>
+                            <div class="admin-metadata__controls">
+                                <input type="text" id="newRarityKey" class="admin-table__input" placeholder="Key">
+                                <input type="text" id="newRarityEn" class="admin-table__input" placeholder="Name (EN)">
+                                <input type="text" id="newRarityDe" class="admin-table__input" placeholder="Name (DE)">
+                                <button type="button" id="btnAddRarity" class="btn btn--primary btn--small">Hinzufügen</button>
+                            </div>
+                            <ul id="adminRarityList" class="admin-metadata__list"></ul>
+                        </div>
+
+                        <div class="admin-metadata__section">
+                            <p class="admin-panel__text admin-io__title">Nachfrage verwalten</p>
+                            <div class="admin-metadata__controls">
+                                <input type="text" id="newDemandKey" class="admin-table__input" placeholder="Key">
+                                <input type="text" id="newDemandEn" class="admin-table__input" placeholder="Name (EN)">
+                                <input type="text" id="newDemandDe" class="admin-table__input" placeholder="Name (DE)">
+                                <button type="button" id="btnAddDemand" class="btn btn--primary btn--small">Hinzufügen</button>
+                            </div>
+                            <ul id="adminDemandList" class="admin-metadata__list"></ul>
+                        </div>
+                    </div>
+
                     <div class="admin-io">
                         <p class="admin-panel__text admin-io__title">Backup &amp; Wiederherstellen</p>
                         <div class="admin-panel__actions admin-io__row">

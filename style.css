@@ -807,6 +807,74 @@ body {
     font-size: 0.75rem;
 }
 
+/* Metadata Management */
+.admin-metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-metadata__section {
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-metadata__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.admin-metadata__controls .admin-table__input {
+    flex: 1;
+    min-width: 80px;
+    max-width: none;
+}
+
+.admin-metadata__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: rgba(0,0,0,0.2);
+}
+
+.admin-metadata__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.8rem;
+}
+
+.admin-metadata__item:last-child {
+    border-bottom: none;
+}
+
+.admin-metadata__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.admin-metadata__key {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.admin-metadata__names {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+}
+
 .admin-io {
     margin-bottom: 0.85rem;
     padding-bottom: 0.85rem;
