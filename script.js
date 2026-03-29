@@ -1140,6 +1140,7 @@ function addNewItem() {
 
 // Admin-Tabelle aus ITEM_CATALOG bauen
 function renderAdminItems() {
+    console.log("Rendering Admin Items with Selects...");
     var body = document.getElementById("adminTableBody");
     if (!body) {
         return;
