@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,6 +19,12 @@
             </div>
         </div>
         <nav class="site-header__nav" aria-label="Extras">
+            <div class="lang-switch">
+                <select id="langSelect" class="lang-switch__select" aria-label="Sprache wählen">
+                    <option value="en">English</option>
+                    <option value="de">Deutsch</option>
+                </select>
+            </div>
             <a class="btn btn--ghost" href="#admin" id="adminLink">Admin</a>
         </nav>
     </header>
@@ -35,7 +41,7 @@
                     <label class="sr-only" for="yourItemSelect">Item</label>
                     <select id="yourItemSelect" class="offer-form__select"></select>
                     <label class="sr-only" for="yourQtyInput">Menge</label>
-                    <input type="number" id="yourQtyInput" class="offer-form__qty" min="1" step="1" inputmode="numeric" placeholder="Menge">
+                    <input type="number" id="yourQtyInput" class="offer-form__qty" min="1" step="1" inputmode="numeric" placeholder="Menge" value="1">
                     <button type="button" id="btnAddYour" class="btn btn--primary">Hinzufügen</button>
                 </div>
                 <p id="yourFormError" class="form-error" aria-live="polite"></p>
@@ -83,7 +89,7 @@
                     <label class="sr-only" for="theirItemSelect">Item</label>
                     <select id="theirItemSelect" class="offer-form__select"></select>
                     <label class="sr-only" for="theirQtyInput">Menge</label>
-                    <input type="number" id="theirQtyInput" class="offer-form__qty" min="1" step="1" inputmode="numeric" placeholder="Menge">
+                    <input type="number" id="theirQtyInput" class="offer-form__qty" min="1" step="1" inputmode="numeric" placeholder="Menge" value="1">
                     <button type="button" id="btnAddTheir" class="btn btn--primary">Hinzufügen</button>
                 </div>
                 <p id="theirFormError" class="form-error" aria-live="polite"></p>
