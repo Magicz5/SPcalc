@@ -745,6 +745,17 @@ body {
     border-color: var(--accent);
 }
 
+.admin-table__hint {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
 .admin-table__input--narrow {
     max-width: 5rem;
 }

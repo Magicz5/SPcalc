@@ -71,7 +71,33 @@ var TRANSLATIONS = {
         placeholderName: "Name",
         placeholderCategory: "Category",
         placeholderRarity: "Rarity",
-        placeholderDemand: "Demand"
+        placeholderDemand: "Demand",
+
+        // Kategorien (Keys müssen mit ITEM_CATALOG übereinstimmen)
+        categories: {
+            materials: "Materials",
+            currency: "Currency",
+            chests: "Chests",
+            tickets: "Tickets",
+            artifacts: "Artifacts",
+            other: "Other"
+        },
+        // Seltenheit
+        rarity: {
+            common: "Common",
+            rare: "Rare",
+            epic: "Epic",
+            legendary: "Legendary",
+            none: "—"
+        },
+        // Nachfrage
+        demand: {
+            low: "Low",
+            medium: "Medium",
+            high: "High",
+            veryHigh: "Very High",
+            none: "—"
+        }
     },
     de: {
         title: "Trading Value Calculator",
@@ -137,9 +163,44 @@ var TRANSLATIONS = {
         placeholderName: "Name",
         placeholderCategory: "Kategorie",
         placeholderRarity: "Seltenheit",
-        placeholderDemand: "Nachfrage"
+        placeholderDemand: "Nachfrage",
+
+        // Kategorien
+        categories: {
+            materials: "Materialien",
+            currency: "Währung",
+            chests: "Truhen",
+            tickets: "Tickets",
+            artifacts: "Artefakte",
+            other: "Sonstiges"
+        },
+        // Seltenheit
+        rarity: {
+            common: "Gewöhnlich",
+            rare: "Selten",
+            epic: "Episch",
+            legendary: "Legendär",
+            none: "—"
+        },
+        // Nachfrage
+        demand: {
+            low: "Niedrig",
+            medium: "Mittel",
+            high: "Hoch",
+            veryHigh: "Sehr hoch",
+            none: "—"
+        }
     }
 };
+
+// Hilfsfunktion zum Holen von Übersetzungen für Metadaten (Kategorie, Rarity, Demand)
+function getTranslation(group, key) {
+    if (!key || key === "" || key === "none") return t("rarity.none");
+    if (TRANSLATIONS[currentLang][group] && TRANSLATIONS[currentLang][group][key]) {
+        return TRANSLATIONS[currentLang][group][key];
+    }
+    return key; // Fallback auf den Key selbst
+}
 
 var currentLang = "en"; // Standard ist Englisch
 
@@ -247,43 +308,43 @@ function setLanguage(lang) {
 var ITEM_CATALOG = [
     {
         name: "Void Shard",
-        category: "Materialien",
+        category: "materials",
         value: 1200,
-        rarity: "Rare",
-        demand: "Hoch",
+        rarity: "rare",
+        demand: "high",
     },
     {
         name: "Raid Token",
-        category: "Währung",
+        category: "currency",
         value: 150,
-        rarity: "Common",
-        demand: "Mittel",
+        rarity: "common",
+        demand: "medium",
     },
     {
         name: "Mythic Chest",
-        category: "Truhen",
+        category: "chests",
         value: 4500,
-        rarity: "Legendary",
-        demand: "Sehr hoch",
+        rarity: "legendary",
+        demand: "veryHigh",
     },
     {
         name: "Boss Ticket",
-        category: "Tickets",
+        category: "tickets",
         value: 2000,
-        rarity: "Epic",
+        rarity: "epic",
     },
     {
         name: "Cursed Finger",
-        category: "Artefakte",
+        category: "artifacts",
         value: 1500,
-        demand: "Mittel",
+        demand: "medium",
     },
     {
         name: "Dark Grail",
-        category: "Artefakte",
+        category: "artifacts",
         value: 800,
-        rarity: "Rare",
-        demand: "Niedrig",
+        rarity: "rare",
+        demand: "low",
     },
 ];
 
@@ -318,7 +379,7 @@ function getItemByName(name) {
 function getItemCategory(item) {
     var c = item.category;
     if (!c || String(c).trim() === "") {
-        return t("other");
+        return "other";
     }
     return String(c).trim();
 }
@@ -335,7 +396,14 @@ function getCategories() {
             out.push(c);
         }
     }
-    out.sort();
+    // Sortierung nach dem übersetzten Namen
+    out.sort(function(a, b) {
+        var nameA = getTranslation("categories", a).toLowerCase();
+        var nameB = getTranslation("categories", b).toLowerCase();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+    });
     return out;
 }
 
@@ -395,12 +463,12 @@ function renderItems() {
 }
 
 // Eine Tabellen-Zeile: Kategorie-Überschrift (nur bei „Alle“)
-function appendCategoryHeaderRow(body, title) {
+function appendCategoryHeaderRow(body, categoryKey) {
     var tr = document.createElement("tr");
     tr.className = "value-table__cat-row";
     var td = document.createElement("td");
     td.colSpan = 5;
-    td.textContent = title;
+    td.textContent = getTranslation("categories", categoryKey);
     tr.appendChild(td);
     body.appendChild(tr);
 }
@@ -412,16 +480,16 @@ function appendItemDataRow(body, item) {
     tdName.textContent = item.name;
     var tdCat = document.createElement("td");
     tdCat.className = "value-table__muted";
-    tdCat.textContent = displayOptional(item.category);
+    tdCat.textContent = getTranslation("categories", item.category);
     var tdVal = document.createElement("td");
     tdVal.className = "value-table__value";
     tdVal.textContent = formatNum(item.value);
     var tdRarity = document.createElement("td");
     tdRarity.className = "value-table__muted";
-    tdRarity.textContent = displayOptional(item.rarity);
+    tdRarity.textContent = getTranslation("rarity", item.rarity);
     var tdDemand = document.createElement("td");
     tdDemand.className = "value-table__muted";
-    tdDemand.textContent = displayOptional(item.demand);
+    tdDemand.textContent = getTranslation("demand", item.demand);
     tr.appendChild(tdName);
     tr.appendChild(tdCat);
     tr.appendChild(tdVal);
@@ -445,9 +513,10 @@ function fillCatalogFilter() {
     var cats = getCategories();
     var i;
     for (i = 0; i < cats.length; i++) {
+        var catKey = cats[i];
         var o = document.createElement("option");
-        o.value = cats[i];
-        o.textContent = cats[i];
+        o.value = catKey;
+        o.textContent = getTranslation("categories", catKey);
         sel.appendChild(o);
     }
     if (current && (current === FILTER_ALL || cats.indexOf(current) >= 0)) {
@@ -469,13 +538,13 @@ function fillSelectOptions(selectId) {
     var cats = getCategories();
     var c;
     for (c = 0; c < cats.length; c++) {
-        var catName = cats[c];
-        var inCat = filterItemsByCategory(ITEM_CATALOG, catName);
+        var catKey = cats[c];
+        var inCat = filterItemsByCategory(ITEM_CATALOG, catKey);
         if (inCat.length === 0) {
             continue;
         }
         var og = document.createElement("optgroup");
-        og.label = catName;
+        og.label = getTranslation("categories", catKey);
         var j;
         for (j = 0; j < inCat.length; j++) {
             var it = inCat[j];
@@ -654,7 +723,7 @@ function createTradeRow(side, index, itemKey, qty) {
     var lineTotal = qty * unit;
     var meta = "";
     if (item) {
-        meta = escapeHtml(getItemCategory(item));
+        meta = getTranslation("categories", item.category);
     }
     return (
         '<li class="item-row">' +
@@ -1065,6 +1134,21 @@ function addNewItem() {
 }
 
 // Admin-Tabelle aus ITEM_CATALOG bauen
+function validateImportedData(data) {
+    // ... (bestehende Validierung)
+    // Wir lassen die Rohdaten-Keys zu, falls sie existieren.
+    // Wenn nicht, versuchen wir sie zu mappen oder nutzen den Key direkt.
+    // ...
+    // Wir müssen sicherstellen, dass wir beim Import die Keys nutzen, falls möglich.
+    // Aber für dieses Projekt halten wir es einfach: Wir übernehmen die Daten 1:1.
+    // Wenn der User "Artefakte" importiert, wird es zum Key "Artefakte".
+    // Wenn er "artifacts" importiert, wird es übersetzt.
+    
+    // (Ich ändere hier nichts an der Validierungs-Logik selbst, da sie bereits robust ist.
+    // Die Anzeige-Logik nutzt getTranslation, was Keys bevorzugt, aber Fallbacks hat.)
+}
+
+// ... in renderAdminItems ...
 function renderAdminItems() {
     var body = document.getElementById("adminTableBody");
     if (!body) {
@@ -1078,15 +1162,19 @@ function renderAdminItems() {
             var item = ITEM_CATALOG[idx];
             var tr = document.createElement("tr");
 
-            function addTextInput(field, extraClass, placeholderKey) {
+            function addTextInput(field, extraClass, placeholderKey, isKey) {
                 var td = document.createElement("td");
                 var inp = document.createElement("input");
                 inp.type = "text";
                 inp.placeholder = t(placeholderKey);
                 inp.className = "admin-table__input" + (extraClass ? " " + extraClass : "");
-                inp.value =
-                    item[field] === undefined || item[field] === null ? "" : item[field];
-                // Name erst beim Verlassen des Felds speichern (sonst bricht die Zuordnung beim Tippen)
+                
+                // Im Admin-Bereich zeigen wir die Roh-Keys an (für Bearbeitung)
+                // Aber wir geben einen Hinweis, was der aktuelle Wert ist
+                var val = item[field] === undefined || item[field] === null ? "" : item[field];
+                inp.value = val;
+
+                // Name erst beim Verlassen des Felds speichern
                 if (field === "name") {
                     inp.addEventListener("change", function () {
                         updateItemValue(idx, "name", inp.value);
@@ -1097,11 +1185,20 @@ function renderAdminItems() {
                     });
                 }
                 td.appendChild(inp);
+                
+                // Kleiner Hinweis unter dem Input, was der übersetzte Wert ist (außer bei Name/Value)
+                if (isKey && val !== "") {
+                    var hint = document.createElement("div");
+                    hint.className = "admin-table__hint";
+                    hint.textContent = "(" + getTranslation(field === "category" ? "categories" : field, val) + ")";
+                    td.appendChild(hint);
+                }
+
                 tr.appendChild(td);
             }
 
-            addTextInput("name", "", "placeholderName");
-            addTextInput("category", "", "placeholderCategory");
+            addTextInput("name", "", "placeholderName", false);
+            addTextInput("category", "", "placeholderCategory", true);
             var tdVal = document.createElement("td");
             var valInp = document.createElement("input");
             valInp.type = "text";
@@ -1113,8 +1210,8 @@ function renderAdminItems() {
             tdVal.appendChild(valInp);
             tr.appendChild(tdVal);
 
-            addTextInput("rarity", "", "placeholderRarity");
-            addTextInput("demand", "", "placeholderDemand");
+            addTextInput("rarity", "", "placeholderRarity", true);
+            addTextInput("demand", "", "placeholderDemand", true);
 
             var tdDel = document.createElement("td");
             var btn = document.createElement("button");
