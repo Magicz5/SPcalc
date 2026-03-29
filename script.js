@@ -1146,6 +1146,11 @@ function renderAdminItems() {
     }
     body.innerHTML = "";
 
+    // Keys einmal holen
+    var catKeys = Object.keys(TRANSLATIONS[currentLang].categories);
+    var rarityKeys = Object.keys(TRANSLATIONS[currentLang].rarity);
+    var demandKeys = Object.keys(TRANSLATIONS[currentLang].demand);
+
     var i;
     for (i = 0; i < ITEM_CATALOG.length; i++) {
         (function (idx) {
@@ -1168,8 +1173,7 @@ function renderAdminItems() {
             // --- Kategorie (Dropdown) ---
             var tdCat = document.createElement("td");
             var selCat = document.createElement("select");
-            selCat.className = "admin-table__input";
-            var catKeys = Object.keys(TRANSLATIONS[currentLang].categories);
+            selCat.className = "admin-table__input admin-table__select";
             var c;
             for (c = 0; c < catKeys.length; c++) {
                 var opt = document.createElement("option");
@@ -1187,7 +1191,7 @@ function renderAdminItems() {
             // --- Wert (Zahl) ---
             var tdVal = document.createElement("td");
             var valInp = document.createElement("input");
-            valInp.type = "text";
+            valInp.type = "number";
             valInp.className = "admin-table__input admin-table__input--narrow";
             valInp.value = String(item.value);
             valInp.addEventListener("input", function () {
@@ -1199,8 +1203,7 @@ function renderAdminItems() {
             // --- Seltenheit (Dropdown) ---
             var tdRarity = document.createElement("td");
             var selRarity = document.createElement("select");
-            selRarity.className = "admin-table__input";
-            var rarityKeys = Object.keys(TRANSLATIONS[currentLang].rarity);
+            selRarity.className = "admin-table__input admin-table__select";
             var r;
             for (r = 0; r < rarityKeys.length; r++) {
                 var optR = document.createElement("option");
@@ -1218,8 +1221,7 @@ function renderAdminItems() {
             // --- Nachfrage (Dropdown) ---
             var tdDemand = document.createElement("td");
             var selDemand = document.createElement("select");
-            selDemand.className = "admin-table__input";
-            var demandKeys = Object.keys(TRANSLATIONS[currentLang].demand);
+            selDemand.className = "admin-table__input admin-table__select";
             var d;
             for (d = 0; d < demandKeys.length; d++) {
                 var optD = document.createElement("option");
