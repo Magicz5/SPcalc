@@ -308,43 +308,45 @@ function setLanguage(lang) {
 var ITEM_CATALOG = [
     {
         name: "Void Shard",
-        category: "materials",
+        categoryKey: "materials",
         value: 1200,
-        rarity: "rare",
-        demand: "high",
+        rarityKey: "rare",
+        demandKey: "high",
     },
     {
         name: "Raid Token",
-        category: "currency",
+        categoryKey: "currency",
         value: 150,
-        rarity: "common",
-        demand: "medium",
+        rarityKey: "common",
+        demandKey: "medium",
     },
     {
         name: "Mythic Chest",
-        category: "chests",
+        categoryKey: "chests",
         value: 4500,
-        rarity: "legendary",
-        demand: "veryHigh",
+        rarityKey: "legendary",
+        demandKey: "veryHigh",
     },
     {
         name: "Boss Ticket",
-        category: "tickets",
+        categoryKey: "tickets",
         value: 2000,
-        rarity: "epic",
+        rarityKey: "epic",
+        demandKey: "none",
     },
     {
         name: "Cursed Finger",
-        category: "artifacts",
+        categoryKey: "artifacts",
         value: 1500,
-        demand: "medium",
+        rarityKey: "none",
+        demandKey: "medium",
     },
     {
         name: "Dark Grail",
-        category: "artifacts",
+        categoryKey: "artifacts",
         value: 800,
-        rarity: "rare",
-        demand: "low",
+        rarityKey: "rare",
+        demandKey: "low",
     },
 ];
 
@@ -377,7 +379,7 @@ function getItemByName(name) {
 
 // Normale Kategorie für ein Item (fehlt sie, landet es unter „Sonstiges“)
 function getItemCategory(item) {
-    var c = item.category;
+    var c = item.categoryKey;
     if (!c || String(c).trim() === "") {
         return "other";
     }
@@ -480,16 +482,16 @@ function appendItemDataRow(body, item) {
     tdName.textContent = item.name;
     var tdCat = document.createElement("td");
     tdCat.className = "value-table__muted";
-    tdCat.textContent = getTranslation("categories", item.category);
+    tdCat.textContent = getTranslation("categories", item.categoryKey);
     var tdVal = document.createElement("td");
     tdVal.className = "value-table__value";
     tdVal.textContent = formatNum(item.value);
     var tdRarity = document.createElement("td");
     tdRarity.className = "value-table__muted";
-    tdRarity.textContent = getTranslation("rarity", item.rarity);
+    tdRarity.textContent = getTranslation("rarity", item.rarityKey);
     var tdDemand = document.createElement("td");
     tdDemand.className = "value-table__muted";
-    tdDemand.textContent = getTranslation("demand", item.demand);
+    tdDemand.textContent = getTranslation("demand", item.demandKey);
     tr.appendChild(tdName);
     tr.appendChild(tdCat);
     tr.appendChild(tdVal);
@@ -723,7 +725,7 @@ function createTradeRow(side, index, itemKey, qty) {
     var lineTotal = qty * unit;
     var meta = "";
     if (item) {
-        meta = getTranslation("categories", item.category);
+        meta = getTranslation("categories", item.categoryKey);
     }
     return (
         '<li class="item-row">' +
@@ -909,19 +911,22 @@ function validateImportedData(data) {
             return { ok: false, error: 'Eintrag "' + name + '" hat einen negativen Wert.' };
         }
 
-        var cat = row.category;
-        if (cat === undefined || cat === null || String(cat).trim() === "") {
-            cat = "Sonstiges";
-        } else {
-            cat = String(cat).trim();
-        }
+        // Mapping von alten Feldern auf neue Keys, falls nötig
+        var catKey = row.categoryKey || row.category || "other";
+        var rarityKey = row.rarityKey || row.rarity || "none";
+        var demandKey = row.demandKey || row.demand || "none";
+
+        // Sicherstellen, dass die Keys existieren, sonst Fallback
+        if (!TRANSLATIONS[currentLang].categories[catKey]) catKey = "other";
+        if (!TRANSLATIONS[currentLang].rarity[rarityKey]) rarityKey = "none";
+        if (!TRANSLATIONS[currentLang].demand[demandKey]) demandKey = "none";
 
         out.push({
             name: name,
-            category: cat,
+            categoryKey: catKey,
             value: val,
-            rarity: row.rarity != null ? String(row.rarity) : "",
-            demand: row.demand != null ? String(row.demand) : "",
+            rarityKey: rarityKey,
+            demandKey: demandKey,
         });
     }
     return { ok: true, items: out };
@@ -1072,14 +1077,14 @@ function updateItemValue(index, field, rawValue) {
         var oldName = item.name;
         item.name = newName;
         renameItemInTradeLines(oldName, newName);
-    } else if (field === "category") {
-        item.category = String(rawValue);
+    } else if (field === "categoryKey") {
+        item.categoryKey = String(rawValue);
     } else if (field === "value") {
         item.value = parseItemValue(rawValue);
-    } else if (field === "rarity") {
-        item.rarity = String(rawValue);
-    } else if (field === "demand") {
-        item.demand = String(rawValue);
+    } else if (field === "rarityKey") {
+        item.rarityKey = String(rawValue);
+    } else if (field === "demandKey") {
+        item.demandKey = String(rawValue);
     }
 
     refreshMainAfterCatalogChange();
@@ -1124,31 +1129,16 @@ function deleteItem(index) {
 function addNewItem() {
     ITEM_CATALOG.push({
         name: t("newItem") + " " + (ITEM_CATALOG.length + 1),
-        category: t("other"),
+        categoryKey: "other",
         value: 0,
-        rarity: "",
-        demand: "",
+        rarityKey: "none",
+        demandKey: "none",
     });
     renderAdminItems();
     refreshMainAfterCatalogChange();
 }
 
 // Admin-Tabelle aus ITEM_CATALOG bauen
-function validateImportedData(data) {
-    // ... (bestehende Validierung)
-    // Wir lassen die Rohdaten-Keys zu, falls sie existieren.
-    // Wenn nicht, versuchen wir sie zu mappen oder nutzen den Key direkt.
-    // ...
-    // Wir müssen sicherstellen, dass wir beim Import die Keys nutzen, falls möglich.
-    // Aber für dieses Projekt halten wir es einfach: Wir übernehmen die Daten 1:1.
-    // Wenn der User "Artefakte" importiert, wird es zum Key "Artefakte".
-    // Wenn er "artifacts" importiert, wird es übersetzt.
-    
-    // (Ich ändere hier nichts an der Validierungs-Logik selbst, da sie bereits robust ist.
-    // Die Anzeige-Logik nutzt getTranslation, was Keys bevorzugt, aber Fallbacks hat.)
-}
-
-// ... in renderAdminItems ...
 function renderAdminItems() {
     var body = document.getElementById("adminTableBody");
     if (!body) {
@@ -1162,43 +1152,39 @@ function renderAdminItems() {
             var item = ITEM_CATALOG[idx];
             var tr = document.createElement("tr");
 
-            function addTextInput(field, extraClass, placeholderKey, isKey) {
-                var td = document.createElement("td");
-                var inp = document.createElement("input");
-                inp.type = "text";
-                inp.placeholder = t(placeholderKey);
-                inp.className = "admin-table__input" + (extraClass ? " " + extraClass : "");
-                
-                // Im Admin-Bereich zeigen wir die Roh-Keys an (für Bearbeitung)
-                // Aber wir geben einen Hinweis, was der aktuelle Wert ist
-                var val = item[field] === undefined || item[field] === null ? "" : item[field];
-                inp.value = val;
+            // --- Name (Freitext) ---
+            var tdName = document.createElement("td");
+            var inpName = document.createElement("input");
+            inpName.type = "text";
+            inpName.placeholder = t("placeholderName");
+            inpName.className = "admin-table__input";
+            inpName.value = item.name;
+            inpName.addEventListener("change", function () {
+                updateItemValue(idx, "name", inpName.value);
+            });
+            tdName.appendChild(inpName);
+            tr.appendChild(tdName);
 
-                // Name erst beim Verlassen des Felds speichern
-                if (field === "name") {
-                    inp.addEventListener("change", function () {
-                        updateItemValue(idx, "name", inp.value);
-                    });
-                } else {
-                    inp.addEventListener("input", function () {
-                        updateItemValue(idx, field, inp.value);
-                    });
-                }
-                td.appendChild(inp);
-                
-                // Kleiner Hinweis unter dem Input, was der übersetzte Wert ist (außer bei Name/Value)
-                if (isKey && val !== "") {
-                    var hint = document.createElement("div");
-                    hint.className = "admin-table__hint";
-                    hint.textContent = "(" + getTranslation(field === "category" ? "categories" : field, val) + ")";
-                    td.appendChild(hint);
-                }
-
-                tr.appendChild(td);
+            // --- Kategorie (Dropdown) ---
+            var tdCat = document.createElement("td");
+            var selCat = document.createElement("select");
+            selCat.className = "admin-table__input";
+            var catKeys = Object.keys(TRANSLATIONS[currentLang].categories);
+            var c;
+            for (c = 0; c < catKeys.length; c++) {
+                var opt = document.createElement("option");
+                opt.value = catKeys[c];
+                opt.textContent = getTranslation("categories", catKeys[c]);
+                selCat.appendChild(opt);
             }
+            selCat.value = item.categoryKey || "other";
+            selCat.addEventListener("change", function () {
+                updateItemValue(idx, "categoryKey", selCat.value);
+            });
+            tdCat.appendChild(selCat);
+            tr.appendChild(tdCat);
 
-            addTextInput("name", "", "placeholderName", false);
-            addTextInput("category", "", "placeholderCategory", true);
+            // --- Wert (Zahl) ---
             var tdVal = document.createElement("td");
             var valInp = document.createElement("input");
             valInp.type = "text";
@@ -1210,9 +1196,45 @@ function renderAdminItems() {
             tdVal.appendChild(valInp);
             tr.appendChild(tdVal);
 
-            addTextInput("rarity", "", "placeholderRarity", true);
-            addTextInput("demand", "", "placeholderDemand", true);
+            // --- Seltenheit (Dropdown) ---
+            var tdRarity = document.createElement("td");
+            var selRarity = document.createElement("select");
+            selRarity.className = "admin-table__input";
+            var rarityKeys = Object.keys(TRANSLATIONS[currentLang].rarity);
+            var r;
+            for (r = 0; r < rarityKeys.length; r++) {
+                var optR = document.createElement("option");
+                optR.value = rarityKeys[r];
+                optR.textContent = getTranslation("rarity", rarityKeys[r]);
+                selRarity.appendChild(optR);
+            }
+            selRarity.value = item.rarityKey || "none";
+            selRarity.addEventListener("change", function () {
+                updateItemValue(idx, "rarityKey", selRarity.value);
+            });
+            tdRarity.appendChild(selRarity);
+            tr.appendChild(tdRarity);
 
+            // --- Nachfrage (Dropdown) ---
+            var tdDemand = document.createElement("td");
+            var selDemand = document.createElement("select");
+            selDemand.className = "admin-table__input";
+            var demandKeys = Object.keys(TRANSLATIONS[currentLang].demand);
+            var d;
+            for (d = 0; d < demandKeys.length; d++) {
+                var optD = document.createElement("option");
+                optD.value = demandKeys[d];
+                optD.textContent = getTranslation("demand", demandKeys[d]);
+                selDemand.appendChild(optD);
+            }
+            selDemand.value = item.demandKey || "none";
+            selDemand.addEventListener("change", function () {
+                updateItemValue(idx, "demandKey", selDemand.value);
+            });
+            tdDemand.appendChild(selDemand);
+            tr.appendChild(tdDemand);
+
+            // --- Löschen-Button ---
             var tdDel = document.createElement("td");
             var btn = document.createElement("button");
             btn.type = "button";
