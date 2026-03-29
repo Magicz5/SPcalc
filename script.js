@@ -88,7 +88,9 @@ var TRANSLATIONS = {
             rare: "Rare",
             epic: "Epic",
             legendary: "Legendary",
-            none: "—"
+            mythic: "Mythic",
+            secret: "Secret",
+            none: "none"
         },
         // Nachfrage
         demand: {
