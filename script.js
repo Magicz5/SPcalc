@@ -182,6 +182,8 @@ var TRANSLATIONS = {
             rare: "Selten",
             epic: "Episch",
             legendary: "Legendär",
+            mythic: "Mythisch",
+            secret: "Secret",
             none: "—"
         },
         // Nachfrage
